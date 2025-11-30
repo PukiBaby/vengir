@@ -16,38 +16,9 @@ void on_center_button() {
 	}
 }
 
-void initialize() 
-{
+void initialize() {
 	pros::lcd::initialize();
-	imu.reset();
-	pros::lcd::print(0, "vengir >:)");
-
-	park.set_value(park_value); // Calibrate sensors
-
-	// Odometry task
-
-	pros::Task odometry_task(arc_odometry_fn, "odometry task");
-
-	// Odometry thread on screen
-
-	pros::Task screenTask([&]() // 
-	{
-		while (true) 
-		{
-			// Print robot location to the brain screen
-
-			pros::lcd::print(1, "X: %lf", pose_x); // x
-			pros::lcd::print(2, "Y: %lf", pose_y); // y
-			pros::lcd::print(3, "Theta (degrees): %lf", imu.get_heading()); // heading: degrees --> radians
-			// pros::lcd::print(4, "Horizontal Encoder: %lf", horizontalEnc_raw);
-			// pros::lcd::print(5, "Vertical Encoder: %lf", verticalEnc_raw);
-			// pros::lcd::print(6, "Correction: %lf", correction);
-			// pros::lcd::print(7, "odometry: %d", odometry_is_ready);
-			
-			// Delay to save resources
-			pros::delay(50);
-		}
-	});
+	pros::lcd::set_text(1, "Hello PROS User!");
 
 	pros::lcd::register_btn1_cb(on_center_button);
 }
