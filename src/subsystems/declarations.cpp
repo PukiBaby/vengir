@@ -1,7 +1,7 @@
 #include "main.h"
 
-// #include "subsystems\autonomous.hpp"
-// #include "subsystems\mechanisms.hpp"
+#include "subsystems\autonomous.hpp"
+#include "subsystems\mechanisms.hpp"
 #include "subsystems\declarations.hpp"
 
 #include <math.h>
