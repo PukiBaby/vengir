@@ -3,31 +3,8 @@
 #include <math.h>
 
 #include "subsystems\declarations.hpp"
-
-double exponential_drive(double input, double controllerDeadband = 3, double drivetrainDeadband = 10, double exponential_gain = 1.019)
-{
-    double maximumEffectiveInput = 127 - controllerDeadband; // Need to do this so that maximum input maps to 1
-    // shift input back by the deadband and then scale it so that it goes from 0 to 1
-    double sign;
-
-    if (input > 0) 
-    {
-        sign = 1;
-    }
-    else
-    {
-        sign = -1;
-    }
-
-    double normalizedInput = (fabs(input) - controllerDeadband)/maximumEffectiveInput; // This formula only works for positive numbers
-
-    if (fabs(input) < controllerDeadband)
-    {
-        return 0;
-    }
-
-    return sign*(drivetrainDeadband + (127 - drivetrainDeadband)*powf(normalizedInput, exponential_gain));
-}
+#include "subsystems\autonomous.hpp"
+#include "subsystems\declarations.hpp"
 
 void on_center_button() {
 	static bool pressed = false;
