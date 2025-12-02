@@ -11,7 +11,7 @@
 command mechanism_state_var;
 
 double pose_x = 0;
-double pose_y = -3*TILE + PARK_ZONE_DEPTH + TRACKING_CENTER_DISTANCE_FROM_BACK;
+double pose_y = 0;
 
 double delta_pose_x = 0;
 double delta_pose_y = 0;
@@ -39,28 +39,13 @@ double r_S; // Distance to center of rotation for perpendicular (horizontal) com
 double r_R; // Distance to center of rotation for vertical component of movement from horizontal encoder
 double r_A; // Distance to center of rotation (same as r_R) for vertical component of movement from tracking center
 
-bool odometry_is_ready = false;
-
+int odom_alive = 0;
 void arc_odometry_fn ()
 {
 
     pose_theta_previous = 0; // Change using GPS sensor
     horizontalEnc.reset_position(); // resets position to 0 (reset method only resets it to current angle of rotation sensor)
     verticalEnc.reset_position();
-
-    // Wait until encoders are actually at zero
-    while (fabs(horizontalEnc.get_position()) > 1 || fabs(verticalEnc.get_position()) > 1)
-    {
-        pros::delay(5);
-    }
-
-    // Optional: also wait for IMU to finish calibrating if necessary
-    while (imu.is_calibrating())
-    {
-        pros::delay(10);
-    }
-
-    odometry_is_ready = true;
 
     while (true)
     {
@@ -90,9 +75,17 @@ void arc_odometry_fn ()
             // delta_pose_x = 2 * sin (delta_theta/2) * ( r_S * cos (-(pose_theta_previous + delta_theta/2)) - r_A * sin (-(pose_theta_previous + delta_theta/2)) );
             // delta_pose_y = 2 * sin (delta_theta/2) * ( r_S * sin (-(pose_theta_previous + delta_theta/2)) + r_A * cos (-(pose_theta_previous + delta_theta/2)) );
 
-        delta_pose_x = -2 * sin (delta_theta/2) * ( r_S * sin (-(pose_theta_previous + delta_theta/2)) + r_A * cos (-(pose_theta_previous + delta_theta/2)) );
-        delta_pose_y = 2 * sin (delta_theta/2) * ( r_S * cos (-(pose_theta_previous + delta_theta/2)) - r_A * sin (-(pose_theta_previous + delta_theta/2)) );
-
+        if (fabs(delta_theta) < 1e-6)
+        {
+            delta_pose_y = delta_S;
+            delta_pose_x = delta_R;
+        }
+        else
+        {
+            delta_pose_x = 2 * sin (delta_theta/2) * ( r_S * sin (-(pose_theta_previous + delta_theta/2)) - r_A * cos (-(pose_theta_previous + delta_theta/2)) );
+            delta_pose_y = -2 * sin (delta_theta/2) * ( r_S * cos (-(pose_theta_previous + delta_theta/2)) + r_A * sin (-(pose_theta_previous + delta_theta/2)) );
+        }
+        
         pose_x += delta_pose_x; // Should be 0 if nothing happens
         pose_y += delta_pose_y;
 
@@ -103,6 +96,9 @@ void arc_odometry_fn ()
                 pose_theta_previous = theta_raw; // degrees --> radians
 
         // Delay
+        odom_alive += 20;
+        // pros::lcd::print(5, "odometry alive for: %f msec", odom_alive);
+        // I can't be randomly trying to print to the lcd outside of the lcd printing task
         pros::delay(20);
     }
 }
@@ -325,139 +321,18 @@ void mechanism_state_fn()
 void execute_autonomous(autonomous_selection slct) 
 {
     pros::Task mechanism_state_task(mechanism_state_fn); // create outside of switch statement
-    while (!odometry_is_ready)
-    {
-        pros::delay(1);
-    }
+
     switch (slct)    
     {
         case (autonomous_selection::test):
-            mechanism_state_var = command::collecting;
-            // straight_PID(0, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.5);
-            // pros::delay(500);
-            turning_PID(90);
-            // pros::delay(500);
-            // straight_PID(-TILE + 7, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.5);
-            break;
-
-        case (autonomous_selection::easy_middlestart_left): // need to adjust timings
-            mechanism_state_var = command::collecting;
-            straight_PID(0, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.5);
-            turning_PID(-90, 0.5);
-            straight_PID(-TILE + 7, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.5);
-            straight_PID(-TILE - 1, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.25); // slow down and drive further
-            mechanism_state_var = command::low;
-            pros::delay(500);
-            mechanism_state_var = command::collecting;
-            pros::delay(2000);
             mechanism_state_var = command::stop;
-            straight_PID(-TILE, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.5); // back
-            turning_PID(-135);
-            straight_PID(-2*TILE, -2*TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
-            turning_PID(180);
-            straight_PID(-2*TILE, -3*TILE + 5, false, 0.5); // scraper stuff, FALSE to going back
-            pros::delay(20);
-            straight_PID(-2*TILE, -TILE - 5, true, 0.5);
-            mechanism_state_var = command::high;
-            break;
-    
-        case (autonomous_selection::autonomous_win_point_middlestart_right):
-            mechanism_state_var = command::collecting;
-
-            // (0) Get ready
-            // pros::lcd::print(5, "Stage 0: get ready");
-            straight_PID(0, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.5);
-            turning_PID(90, 0.25);
-
-            // (1) Collect balls
-            // pros::lcd::print(5, "Stage 1: collect balls");
-            straight_PID(TILE - 7, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.75);
-            straight_PID(TILE + 1, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.5);
-            mechanism_state_var = command::low;
-            pros::delay(500);
-            mechanism_state_var = command::collecting;
-            pros::delay(1000);
-            straight_PID(TILE, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, true, 0.75); // go back to correct position
-
-            // (2) Deposit 2 balls in high goal
-            // pros::lcd::print(5, "Stage 2: Deposit 2 balls in high goal");
-            turning_PID(135);
-            straight_PID(0.2*TILE, -0.2*TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, true, 0.5);
-            mechanism_state_var = command::low;
-
-            // (3) Collect other middle balls
-            pros::lcd::print(5, "Stage 3: Collect other middle balls");
-            straight_PID(TILE, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.75);
-            turning_PID(-90);
-            straight_PID(-TILE + 7, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.75);
-            straight_PID(-TILE - 1, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.5);
-            mechanism_state_var = command::low;
-            pros::delay(500);
-            mechanism_state_var = command::collecting;
-            pros::delay(1000);
-            straight_PID(-TILE, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.75);
-
-            // (4) Scraper
-            pros::lcd::print(5, "Stage 4: Scraper");
-            turning_PID(-135, 0.5);
-            straight_PID(-2*TILE, -2*TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
-            turning_PID(180);
-
-            // (5) Deposit in long goal
-            pros::lcd::print(5, "Stage 5: Deposit in long goal");
-            straight_PID(-2*TILE, -3*TILE + 5, false, 0.5); // scraper stuff, FALSE to going back
-            pros::delay(20);
-            straight_PID(-2*TILE, -TILE - 5, true, 0.5);
-            mechanism_state_var = command::high;
-            
-            break;
-        
-        case (autonomous_selection::middle_control_middlestart):
-            mechanism_state_var = command::collecting;
-            straight_PID(0, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.5);
-            turning_PID(-90, 0.5);
-
-            // (1) Collect balls
-            pros::lcd::print(5, "Stage 1: collect balls");
-            straight_PID(-TILE + 7, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.75);
-            straight_PID(-TILE - 1, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.5);
-            mechanism_state_var = command::low;
-            pros::delay(500);
-            mechanism_state_var = command::collecting;
-            pros::delay(1000);
-            straight_PID(-TILE, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, true, 0.75);
-
-            // (2) Deposit 2 balls in low goal
-            pros::lcd::print(5, "Stage 2: Deposit 2 balls in low goal");
-            turning_PID(-135);
-            straight_PID(-0.2*TILE, -0.2*TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, true, 0.5);
-            mechanism_state_var = command::low;
-            pros::delay(1000);
-
-            // (3) Collect balls under long goal
-            pros::lcd::print(5, "Stage 3: Collect other middle balls");
-            turning_PID(-135, 0.75);
-            straight_PID(-2*TILE - 0.2*TILE, - 0.2*TILE, false, 0.5);
-            // use scraper
-            straight_PID(-TILE, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.75);
-
-            // (4) Scraper on loader
-            pros::lcd::print(5, "Stage 4: Scraper on loader");
-            turning_PID(-135, 0.5);
-            straight_PID(-2*TILE, -2*TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, false, 0.75);
-            turning_PID(180);
-            straight_PID(-2*TILE, -2*TILE - 5, false, 0.75);
-            pros::delay(20);
-            // use scraper
-
-            // (5) Deposit in long goal
-            straight_PID(-2*TILE, -TILE - 5, true, 0.5);
-            mechanism_state_var = command::high;
-            
+            pros::lcd::print(7, "lcd is working");
+            // turning_PID (90);
+            straight_PID (0, 24);
             break;
 
-        case (autonomous_selection::easy_left):
-            break;
+        case (autonomous_selection::middle_control):
+            mechanism_state_var = command::intake;
     }
     
     mechanism_state_var = command::stop;

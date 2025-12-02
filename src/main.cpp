@@ -10,9 +10,12 @@ void on_center_button()
 {
 	static bool pressed = false;
 	pressed = !pressed;
-	if (pressed) {
+	if (pressed) 
+	{
 		pros::lcd::set_text(2, "I was pressed!");
-	} else {
+	} 
+	else 
+	{
 		pros::lcd::clear_line(2);
 	}
 }
@@ -20,14 +23,17 @@ void on_center_button()
 void initialize() 
 {
 	pros::lcd::initialize();
-	imu.reset();
+	imu.reset(true); // blocking = true
 	pros::lcd::print(0, "vengir >:)");
 
 	park.set_value(park_value); // Calibrate sensors
 
 	// Odometry task
 
-	pros::Task odometry_task(arc_odometry_fn, "odometry task"); // not causing the freezing issue
+	pros::Task odometry_task(arc_odometry_fn, "odometry task"); 
+
+	horizontalEnc.reset_position();
+	verticalEnc.reset_position();
 
 	// Odometry thread on screen
 
@@ -40,10 +46,7 @@ void initialize()
 			pros::lcd::print(1, "X: %lf", pose_x); // x
 			pros::lcd::print(2, "Y: %lf", pose_y); // y
 			pros::lcd::print(3, "Theta (degrees): %lf", imu.get_heading()); // heading: degrees --> radians
-			// pros::lcd::print(4, "Horizontal Encoder: %lf", horizontalEnc_raw);
-			// pros::lcd::print(5, "Vertical Encoder: %lf", verticalEnc_raw);
-			// pros::lcd::print(6, "Correction: %lf", correction);
-			// pros::lcd::print(7, "odometry: %d", odometry_is_ready);
+			pros::lcd::print(4, "Odometry alive for: %d msec", odom_alive);
 			
 			// Delay to save resources
 			pros::delay(50);
@@ -59,7 +62,23 @@ void disabled() {}
 
 void competition_initialize() {}
 
-void autonomous() {}
+void autonomous() 
+{
+	autonomous_selection autonomous_variable = autonomous_selection::test;
+	switch (autonomous_variable)    
+    {
+        case (autonomous_selection::test):
+            pose_x = 0;
+            pose_y = 0;
+            break;
+
+        case (autonomous_selection::middle_control): // need to adjust timings
+            pose_x = 0;
+            pose_y = -3*TILE + PARK_ZONE_DEPTH + TRACKING_CENTER_DISTANCE_FROM_BACK;
+            break;
+    }
+	execute_autonomous(autonomous_variable);
+}
 
 void opcontrol() 
 {

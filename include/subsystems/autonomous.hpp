@@ -9,8 +9,7 @@
 
 #define TILE 23.622
 
-#define TRACKING_WHEEL_DIAMETER 2.02679853926 * 1.014776575 * 0.97 // had to apply scaling factor
-    // 3.25 is for the driving wheels
+#define TRACKING_WHEEL_DIAMETER 2.04693272372 * 0.989350176396 * 0.985034552924 
 #define WHEEL_DIAMETER 3.25
 
 #define WHEELBASE 11.375
@@ -26,14 +25,14 @@
     // 15.5/2 = 7.75 inches from front/back to tracking center, 13.5/2 = 6.75 inches from left/right to tracking center
 #define TRACKING_CENTER_DISTANCE_FROM_LEFT 6.75
 
-#define HORIZONTAL_ENC_DISTANCE 0.25
-    // 16 holes from back
-    // 8 inches from back
-    // distance from back - distance of tracking center from back = 8 - 7.75 = 0.25 inches FORWARD from tracking center 
-#define VERTICAL_ENC_DISTANCE -2
-    // 11.5 holes from left
-    // 5.75 holes from left
-    // distance from left - tracking center = 5.75 - 7.75 = -2 inches RIGHT of (i.e. 2 inches LEFT) tracking center
+#define HORIZONTAL_ENC_DISTANCE -0.75
+    // 14 holes from back
+    // 7 inches from back
+    // distance from back - distance of tracking center from back = 7 - 7.75 = -0.75 inches FORWARD from tracking center 
+#define VERTICAL_ENC_DISTANCE -1.75
+    // 12 holes from left
+    // 6 holes from left
+    // distance from left - tracking center = 6 - 7.75 = -1.75 inches RIGHT of (i.e. 1.75 inches LEFT) tracking center
 
 // OTHER LIBRARIES
 
@@ -50,11 +49,11 @@
 
 extern command mechanism_state_var;
 
-enum class autonomous_selection : int {test, easy_middlestart_left, easy_middlestart_right, twenty_points, autonomous_win_point_middlestart_left, autonomous_win_point_middlestart_right, middle_control_middlestart, easy_left, easy_right, autonomous_win_point_right, autonomous_win_point_left};
+enum class autonomous_selection : int {test, middle_control};
 
 void execute_autonomous(autonomous_selection slct);
 
-extern bool odometry_is_ready;
+extern int odom_alive;
 void arc_odometry_fn();
 
 extern double correction;
@@ -63,7 +62,7 @@ void turning_PID (double desired_degrees,
                   double scaling = 1,
                   double k_P = 2, 
                   double k_I = 0, 
-                  double k_D = 0, 
+                  double k_D = 6, 
                   double anti_windup = 3);
 void straight_PID (double desired_x, 
                    double desired_y, 
@@ -71,7 +70,7 @@ void straight_PID (double desired_x,
                    double scaling = 1,
                    double k_P_distance = 4, 
                    double k_I_distance = 0, 
-                   double k_D_distance = 0, 
+                   double k_D_distance = 0.5, 
                    double anti_windup_distance = 3);
                    
 extern double pose_x;

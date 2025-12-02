@@ -23,13 +23,13 @@
 
 // Game mechanisms
 
-#define MOTOR_UPTAKE_PORT -2 // placeholder
+#define MOTOR_UPTAKE_PORT 4
 #define MOTOR_INTAKE_PORT 1
 
-#define SCRAPER_PORT 'A' // placeholder
-#define OUTTAKE_PORT 'B' // placeholder
-#define DESCORE_PORT 'C' // placeholder
-#define PARK_PORT 'G' // placeholder
+#define SCRAPER_PORT 'C'
+#define OUTTAKE_PORT 'A'
+#define DESCORE_PORT 'B'
+#define PARK_PORT 'D'
 
 #define DISTANCE_SENSOR_PORT 103 // placeholder
 
