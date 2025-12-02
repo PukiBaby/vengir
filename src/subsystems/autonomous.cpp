@@ -282,9 +282,6 @@ void mechanism_state_fn()
     pros::lcd::print(0, "Mech task");
     while (true)
     {
-        scraper_value = false;
-        scraper.set_value(scraper_value);
-
         // collecting, low, middlea, middleb, higha, highb, stop
         switch (mechanism_state_var)
         {
@@ -320,19 +317,52 @@ void mechanism_state_fn()
 
 void execute_autonomous(autonomous_selection slct) 
 {
-    pros::Task mechanism_state_task(mechanism_state_fn); // create outside of switch statement
+    // pros::Task mechanism_state_task(mechanism_state_fn); // create outside of switch statement
 
     switch (slct)    
     {
         case (autonomous_selection::test):
-            mechanism_state_var = command::stop;
+            // mechanism_state_var = command::low;
+            intake_mg.move(127);
             pros::lcd::print(7, "lcd is working");
             // turning_PID (90);
-            straight_PID (0, 24);
             break;
 
         case (autonomous_selection::middle_control):
-            mechanism_state_var = command::intake;
+            mechanism_state_var = command::collecting;
+            outtake_value = false;
+			outtake_pneumatics.set_value(outtake_value);
+			pros::delay(170);
+
+            // (0) Get ready
+            straight_PID(0, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
+            turning_PID(90);
+
+            // (1) Collect balls
+            straight_PID(TILE + 1, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
+            mechanism_state_var = command::low;
+            // pros::delay(500);
+            mechanism_state_var = command::collecting;
+            // pros::delay(500);
+            
+            // (2) Deposit 2 balls in high goal
+            straight_PID(TILE - TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, true);
+            turning_PID(135);
+            straight_PID(0.4*TILE, -0.4*TILE, true);
+            mechanism_state_var = command::low;
+
+            // (3) Scraper
+            turning_PID(135);
+            straight_PID(2*TILE + 9.5, -2*TILE);
+            turning_PID(180);
+
+            // (5) Deposit in long goal
+            straight_PID(2*TILE + 9.5, -3*TILE + 5); // scraper stuff, FALSE to going back
+            pros::delay(20);
+            straight_PID(2*TILE + 9.5, -TILE - 5, true);
+            mechanism_state_var = command::high;
+            
+            break;
     }
     
     mechanism_state_var = command::stop;

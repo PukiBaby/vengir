@@ -36,7 +36,7 @@
 // Odometry
 
 #define H_ENC_PORT 12
-#define V_ENC_PORT 18
+#define V_ENC_PORT 16
 #define IMU_PORT 20
 
 // FORWARD DECLARATIONS

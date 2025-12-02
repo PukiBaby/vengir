@@ -74,20 +74,88 @@ void autonomous()
 
         case (autonomous_selection::middle_control): // need to adjust timings
             pose_x = 0;
-            pose_y = -3*TILE + PARK_ZONE_DEPTH + TRACKING_CENTER_DISTANCE_FROM_BACK;
+            pose_y = -3*TILE + PARK_ZONE_DEPTH + TRACKING_CENTER_DISTANCE_FROM_BACK + 4;
             break;
     }
 	execute_autonomous(autonomous_variable);
 }
 
-void opcontrol() 
+void opcontrol()
 {
 	while (true) 
 	{
-		int dir = master.get_analog(ANALOG_LEFT_Y);    
-		int turn = master.get_analog(ANALOG_RIGHT_X);  
-		left_mg.move(exponential_drive(dir + turn));                      
-		right_mg.move(exponential_drive(dir - turn));                     
-		pros::delay(20);                               
+    	// get joystick positions
+    	int straight = exponential_drive(master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y));
+    	int turn = exponential_drive(master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X));
+
+    	// move the chassis with curvature drive
+		left_mg.move(straight + turn);
+		right_mg.move(straight - turn);
+
+		// delay to save resources
+		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1) and !master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) and !master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) 
+		{
+			execute_command(command::collecting);
+		} 
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) 
+		{
+			execute_command(command::low);
+		} 
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) 
+		{
+			execute_command(command::high);
+			pros::delay(10); // Add a small delay to prevent CPU overuse
+		} 
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) 
+		{
+			while (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) // While R1 is held down
+			{
+				execute_command(command::middle);
+				pros::delay(10); // Add a small delay to prevent CPU overuse	
+			}
+		} 
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_Y))
+		{
+			scraper_value = !scraper_value;
+			scraper.set_value(scraper_value);
+			pros::delay(170);
+		}
+		else 
+		{
+			execute_command(command::stop);
+		} // Run for 20 ms then update
+		
+		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) 
+		{
+
+			outtake_value = !outtake_value;
+			outtake_pneumatics.set_value(outtake_value);
+
+			pros::delay(170);
+		}
+
+		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) 
+		{
+			if (park_value) 
+			{
+				park.set_value(false);
+				park_value = false;
+			} 
+			else 
+			{
+				park.set_value(true);
+				park_value = true;
+			}
+			pros::delay(170);
+		}
+
+		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT))
+		{
+			descore_value = !descore_value;
+			descore.set_value(descore_value);
+			pros::delay(170);
+		}
+
+		pros::delay(20);
 	}
 }
