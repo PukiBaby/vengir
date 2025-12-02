@@ -30,7 +30,7 @@ pros::adi::DigitalOut scraper (SCRAPER_PORT);
 bool scraper_value = false;
 
 pros::adi::DigitalOut descore (DESCORE_PORT);
-bool descore_value = true;
+bool descore_value = false;
 
 pros::adi::DigitalOut outtake_pneumatics (OUTTAKE_PORT);
 bool outtake_value = true;

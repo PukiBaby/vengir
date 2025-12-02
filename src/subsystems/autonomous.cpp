@@ -323,9 +323,16 @@ void execute_autonomous(autonomous_selection slct)
     {
         case (autonomous_selection::test):
             // mechanism_state_var = command::low;
-            intake_mg.move(127);
-            pros::lcd::print(7, "lcd is working");
-            // turning_PID (90);
+            outtake_value = !outtake_value;
+			outtake_pneumatics.set_value(outtake_value);
+            pros::lcd::print(6, "outtake_value: %d", outtake_value);
+            park_value = !park_value;
+			park.set_value(park_value);
+            descore_value = true;
+			descore.set_value(descore_value);
+            outtake_value = !outtake_value;
+			outtake_pneumatics.set_value(outtake_value);
+            pros::lcd::print(7, "outtake_value: %d", outtake_value);
             break;
 
         case (autonomous_selection::middle_control):
