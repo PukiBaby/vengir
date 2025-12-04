@@ -47,9 +47,7 @@
 
 // FORWARD DECLARATIONS
 
-extern command mechanism_state_var;
-
-enum class autonomous_selection : int {test, middle_control};
+enum class autonomous_selection : int {test, middle_control_middlestart, left_high_goal_middlestart, right_high_goal_middlestart, awp_middle_start};
 
 void execute_autonomous(autonomous_selection slct);
 

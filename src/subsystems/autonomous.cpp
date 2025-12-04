@@ -8,8 +8,6 @@
 
 // Define functions
 
-command mechanism_state_var;
-
 double pose_x = 0;
 double pose_y = 0;
 
@@ -277,102 +275,233 @@ void straight_PID (double desired_x, double desired_y, bool is_going_backwards, 
     right_mg.move(0);
 }
 
-void mechanism_state_fn()
-{
-    pros::lcd::print(0, "Mech task");
-    while (true)
-    {
-        // collecting, low, middlea, middleb, higha, highb, stop
-        switch (mechanism_state_var)
-        {
-            case command::collecting:
-                execute_command(command::collecting);
-                pros::lcd::print(4, "command::collecting");
-                break;
-
-            case command::low:
-                execute_command(command::low);
-                pros::lcd::print(4, "command::low");
-                break;
-
-            case command::middle:
-                execute_command(command::middle);
-                pros::lcd::print(4, "command::middle");
-                break;
-
-            case command::high:
-                execute_command(command::high);
-                pros::lcd::print(4, "command::high");
-                break;
-
-            case command::stop:
-                execute_command(command::stop);
-                pros::lcd::print(4, "command::stop");
-                break;
-            }
-
-            pros::delay(20);
-        }
-    }
-
 void execute_autonomous(autonomous_selection slct) 
 {
-    // pros::Task mechanism_state_task(mechanism_state_fn); // create outside of switch statement
-
     switch (slct)    
     {
         case (autonomous_selection::test):
-            // mechanism_state_var = command::low;
-            outtake_value = !outtake_value;
-			outtake_pneumatics.set_value(outtake_value);
-            pros::lcd::print(6, "outtake_value: %d", outtake_value);
-            park_value = !park_value;
-			park.set_value(park_value);
-            descore_value = true;
-			descore.set_value(descore_value);
-            outtake_value = !outtake_value;
-			outtake_pneumatics.set_value(outtake_value);
-            pros::lcd::print(7, "outtake_value: %d", outtake_value);
+            intake_mg.move(127);
+            outtake_value = false;
+            outtake_pneumatics.set_value (outtake_value);
             break;
 
-        case (autonomous_selection::middle_control):
-            mechanism_state_var = command::collecting;
-            outtake_value = false;
-			outtake_pneumatics.set_value(outtake_value);
+        case (autonomous_selection::middle_control_middlestart):
+            execute_command(command::collecting);
 			pros::delay(170);
 
+            // (0) Get ready
+            straight_PID(0, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
+            turning_PID(-90);
+
+            // (1) Collect balls
+            straight_PID(-TILE - 1, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
+            execute_command(command::low);
+            pros::delay(500);
+            execute_command(command::stop);
+            straight_PID(-TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, true);
+            
+            // (2) Deposit 2 balls in high goal
+            turning_PID(-135);
+            straight_PID(-0.4*TILE - 5, -0.4*TILE - 5, true);
+            outtake_value = true;
+            outtake_pneumatics.set_value(outtake_value);
+            blocker_value = true;
+            blocker.set_value(blocker_value);
+            straight_PID(-0.4*TILE, -0.4*TILE, true);
+            execute_command(command::high);
+            pros::delay(1000);
+            blocker_value = false;
+            blocker.set_value(blocker_value);
+            execute_command(command::collecting);
+
+            // (3) Scraper
+            straight_PID(-2*TILE, -2*TILE); // possibly need to tune X
+            scraper_value = true;
+            scraper.set_value (scraper_value);
+            turning_PID(180);
+            straight_PID(-2*TILE, -3*TILE + 5); // tune
+            execute_command(command::collecting);
+            pros::delay(1000);
+
+            // (4) Deposit in long goal
+            straight_PID(-2*TILE, -TILE - 3); // tune
+            blocker_value = true;
+            blocker.set_value(blocker_value);
+            straight_PID(-2*TILE, -TILE - 5, false, 0.5); // tune
+            execute_command(command::high);
+            
+            break;
+            
+        case (autonomous_selection::left_high_goal_middlestart):
+            execute_command(command::collecting);
+			pros::delay(170);
+        
+            // (0) Get ready
+            straight_PID(0, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
+            turning_PID(-90);
+
+            // (1) Collect balls
+            straight_PID(-TILE - 1, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
+            execute_command(command::low);
+            pros::delay(500);
+            execute_command(command::collecting);
+            execute_command(command::stop);
+            straight_PID(-TILE - TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
+
+            // (2) Collect balls under long goal
+            turning_PID(-45);
+            execute_command(command::collecting);
+            scraper_value = true;
+            scraper.set_value (scraper_value);
+            straight_PID(-2*TILE - 3, 3);
+            pros::delay(1000);
+
+            // (3) Go to loader
+            scraper_value = false;
+            scraper.set_value (scraper_value);
+            straight_PID(-TILE - TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, true);
+            turning_PID(-135);
+            straight_PID(-2*TILE, -2*TILE);
+            turning_PID(180);
+            straight_PID(-2*TILE, -3*TILE + 5); // tune
+            scraper_value = true;
+            scraper.set_value (scraper_value);
+            execute_command(command::collecting);
+            pros::delay(1000);
+
+            // (4) Go to high goal
+            straight_PID(-2*TILE, -TILE - 5); // tune
+            outtake_value = true;
+            outtake_pneumatics.set_value(outtake_value);
+            blocker_value = true;
+            blocker.set_value(blocker_value);
+            straight_PID(-2*TILE, -TILE - 3); // tune
+            execute_command(command::high);            
+
+            break;
+        
+        case (autonomous_selection::right_high_goal_middlestart):
+            execute_command(command::collecting);
+			pros::delay(170);
+        
             // (0) Get ready
             straight_PID(0, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
             turning_PID(90);
 
             // (1) Collect balls
             straight_PID(TILE + 1, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
-            mechanism_state_var = command::low;
-            // pros::delay(500);
-            mechanism_state_var = command::collecting;
-            // pros::delay(500);
-            
-            // (2) Deposit 2 balls in high goal
-            straight_PID(TILE - TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, true);
-            turning_PID(135);
-            straight_PID(0.4*TILE, -0.4*TILE, true);
-            mechanism_state_var = command::low;
+            execute_command(command::low);
+            pros::delay(500);
+            execute_command(command::collecting);
+            execute_command(command::stop);
+            straight_PID(TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
 
-            // (3) Scraper
+            // (2) Collect balls under long goal
+            turning_PID(45);
+            execute_command(command::collecting);
+            scraper_value = true;
+            scraper.set_value (scraper_value);
+            straight_PID(2*TILE + 3, 3);
+            pros::delay(1000);
+
+            // (3) Go to loader
+            scraper_value = false;
+            scraper.set_value (scraper_value);
+            straight_PID(TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, true);
             turning_PID(135);
-            straight_PID(2*TILE + 9.5, -2*TILE);
+            straight_PID(2*TILE, -2*TILE);
             turning_PID(180);
+            straight_PID(2*TILE, -3*TILE + 5); // tune
+            scraper_value = true;
+            scraper.set_value (scraper_value);
+            execute_command(command::collecting);
+            pros::delay(1000);
 
-            // (5) Deposit in long goal
-            straight_PID(2*TILE + 9.5, -3*TILE + 5); // scraper stuff, FALSE to going back
-            pros::delay(20);
-            straight_PID(2*TILE + 9.5, -TILE - 5, true);
-            mechanism_state_var = command::high;
+            // (4) Go to high goal
+            straight_PID(2*TILE, -TILE - 5); // tune
+            outtake_value = true;
+            outtake_pneumatics.set_value(outtake_value);
+            blocker_value = true;
+            blocker.set_value(blocker_value);
+            straight_PID(2*TILE, -TILE - 3); // tune
+            execute_command(command::high);            
+
+            break;
+        
+        case (autonomous_selection::awp_middle_start):
+            // (0) Get ready
+            execute_command(command::collecting);
+            straight_PID(0, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
+            turning_PID(90);
+
+            // (1) Get balls
+            straight_PID(TILE + 1, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
+            execute_command(command::low);
+            pros::delay(500);
+            execute_command(command::collecting);
+            pros::delay(500);
+
+            // (2) Deposit 2 balls in low goal
+            straight_PID(TILE - TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK); // y = -x
+            turning_PID(-45);
+            straight_PID(0.4*TILE, -0.4*TILE);
+            execute_command(command::low);
+            pros::delay(500); // tune
+            execute_command(command::collecting);
             
+            // (3) Collecting other balls
+            straight_PID(TILE - TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, true); // y = -x, going backwards
+            turning_PID(-90);
+            straight_PID(-TILE - 1, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
+            execute_command(command::low);
+            pros::delay(500);
+            execute_command(command::collecting);
+            pros::delay(500);
+            straight_PID(-TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK); // y = x
+
+            // (4) Putting other balls in high goal
+            turning_PID(-135);
+            straight_PID(-0.4*TILE + 5, -0.4*TILE + 5, true);
+            outtake_value = true;
+            outtake_pneumatics.set_value(outtake_value);
+            blocker_value = true; // unblock
+            blocker.set_value(blocker_value);
+            straight_PID(-0.4*TILE, -0.4*TILE, true);
+            execute_command(command::high);
+            pros::delay(500);
+            blocker_value = false; // block
+            blocker.set_value(blocker_value);
+
+            // (5) Collecting balls under long goal
+            straight_PID(-TILE - TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK); // y = -x - 2 --> x = -y - 2
+            turning_PID(-45);
+            scraper_value = true;
+            scraper.set_value(scraper_value);
+            straight_PID(-2*TILE + 4, -4);
+            execute_command(command::collecting);
+            pros::delay(500); // tune
+
+            // (6) Go to loader and collect balls
+            straight_PID(-TILE, -TILE, true);
+            turning_PID(-135);
+            straight_PID(-2*TILE, -2*TILE);
+            turning_PID(180);
+            straight_PID(-2*TILE, -3*TILE + 5);
+            execute_command(command::collecting);
+            pros::delay(500);
+
+            // (7) Go to high goal and dump all balls
+            straight_PID(-2*TILE, -TILE - 7); // tune
+            blocker_value = true; // unblock
+            blocker.set_value(blocker_value);
+            straight_PID(-2*TILE, -TILE - 5); // tune
+            execute_command(command::high);
+            pros::delay(500);
+
             break;
     }
     
-    mechanism_state_var = command::stop;
+    execute_command(command::stop);
 }
 
 // This is technically opcontrol, not autonomous, but since it's a helper function that's math-heavy, I'll leave it here

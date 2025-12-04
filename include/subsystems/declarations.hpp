@@ -30,6 +30,7 @@
 #define OUTTAKE_PORT 'A'
 #define DESCORE_PORT 'B'
 #define PARK_PORT 'D'
+#define BLOCKER_PORT 'E'
 
 #define DISTANCE_SENSOR_PORT 103 // placeholder
 
@@ -68,6 +69,9 @@ extern bool descore_value;
 
 extern pros::adi::DigitalOut outtake_pneumatics;
 extern bool outtake_value;
+
+extern pros::adi::DigitalOut blocker;
+extern bool blocker_value;
 
 // Odometry
 

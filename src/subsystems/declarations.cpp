@@ -35,6 +35,9 @@ bool descore_value = false;
 pros::adi::DigitalOut outtake_pneumatics (OUTTAKE_PORT);
 bool outtake_value = true;
 
+pros::adi::DigitalOut blocker (BLOCKER_PORT);
+bool blocker_value = false;
+
 // Odometry
 
 pros::Rotation horizontalEnc (H_ENC_PORT);

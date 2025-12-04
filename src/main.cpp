@@ -64,7 +64,7 @@ void competition_initialize() {}
 
 void autonomous() 
 {
-	autonomous_selection autonomous_variable = autonomous_selection::test;
+	autonomous_selection autonomous_variable = autonomous_selection::middle_control_middlestart;
 	switch (autonomous_variable)    
     {
         case (autonomous_selection::test):
@@ -72,8 +72,23 @@ void autonomous()
             pose_y = 0;
             break;
 
-        case (autonomous_selection::middle_control): // need to adjust timings
+        case (autonomous_selection::middle_control_middlestart):
             pose_x = 0;
+            pose_y = -3*TILE + PARK_ZONE_DEPTH + TRACKING_CENTER_DISTANCE_FROM_BACK + 4;
+            break;
+
+		case (autonomous_selection::left_high_goal_middlestart):
+			pose_x = 0;
+            pose_y = -3*TILE + PARK_ZONE_DEPTH + TRACKING_CENTER_DISTANCE_FROM_BACK + 4;
+            break;
+
+		case (autonomous_selection::right_high_goal_middlestart):
+			pose_x = 0;
+            pose_y = -3*TILE + PARK_ZONE_DEPTH + TRACKING_CENTER_DISTANCE_FROM_BACK + 4;
+            break;
+		
+		case (autonomous_selection::awp_middle_start):
+			pose_x = 0;
             pose_y = -3*TILE + PARK_ZONE_DEPTH + TRACKING_CENTER_DISTANCE_FROM_BACK + 4;
             break;
     }
@@ -84,76 +99,69 @@ void opcontrol()
 {
 	while (true) 
 	{
-    	// get joystick positions
+    	// Get joystick positions
+
     	int straight = exponential_drive(master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y));
     	int turn = exponential_drive(master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X));
 
-    	// move the chassis with curvature drive
+    	// Move the chassis with curvature drive
+
 		left_mg.move(straight + turn);
 		right_mg.move(straight - turn);
 
-		// delay to save resources
-		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1) and !master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) and !master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) 
+		// Hold
+
+		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
 		{
 			execute_command(command::collecting);
-		} 
-		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) 
-		{
-			execute_command(command::low);
-		} 
-		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) 
+			pros::delay(10); // hold
+		}
+
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2))
 		{
 			execute_command(command::high);
-			pros::delay(10); // Add a small delay to prevent CPU overuse
-		} 
-		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) 
-		{
-			while (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) // While R1 is held down
-			{
-				execute_command(command::middle);
-				pros::delay(10); // Add a small delay to prevent CPU overuse	
-			}
-		} 
-		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_Y))
-		{
-			scraper_value = !scraper_value;
-			scraper.set_value(scraper_value);
-			pros::delay(170);
+			pros::delay(10); // hold
 		}
+
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2))
+		{
+			execute_command(command::middle);
+			pros::delay(10); // hold
+		}
+
 		else 
 		{
 			execute_command(command::stop);
-		} // Run for 20 ms then update
-		
-		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) 
-		{
-
-			outtake_value = !outtake_value;
-			outtake_pneumatics.set_value(outtake_value);
-
-			pros::delay(170);
 		}
 
-		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) 
+		// Toggle
+
+		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN))
 		{
-			if (park_value) 
-			{
-				park.set_value(false);
-				park_value = false;
-			} 
-			else 
-			{
-				park.set_value(true);
-				park_value = true;
-			}
-			pros::delay(170);
+			park_value = !park_value;
+			park.set_value(park_value);
+			pros::delay(170); // toggle
 		}
 
-		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT))
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_Y))
+		{
+			scraper_value != scraper_value;
+			scraper.set_value(scraper_value);
+			pros::delay(170); // toggle
+		}
+
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
 		{
 			descore_value = !descore_value;
 			descore.set_value(descore_value);
-			pros::delay(170);
+			pros::delay(170); // toggle
+		}
+
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
+		{
+			descore_value = !descore_value;
+			descore.set_value(descore_value);
+			pros::delay(170); // toggle
 		}
 
 		pros::delay(20);
