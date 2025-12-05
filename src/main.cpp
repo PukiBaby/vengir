@@ -129,6 +129,11 @@ void opcontrol()
 			pros::delay(10); // hold
 		}
 
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
+		{
+			intake_mg.move(170);
+		}
+
 		else 
 		{
 			execute_command(command::stop);
@@ -141,19 +146,14 @@ void opcontrol()
 			park_value = !park_value;
 			park.set_value(park_value);
 			pros::delay(170); // toggle
+			scraper_value != scraper_value;
+			scraper.set_value(scraper_value);
 		}
 
 		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_Y))
 		{
 			scraper_value != scraper_value;
 			scraper.set_value(scraper_value);
-			pros::delay(170); // toggle
-		}
-
-		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
-		{
-			descore_value = !descore_value;
-			descore.set_value(descore_value);
 			pros::delay(170); // toggle
 		}
 
