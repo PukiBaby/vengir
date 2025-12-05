@@ -64,7 +64,7 @@ void competition_initialize() {}
 
 void autonomous() 
 {
-	autonomous_selection autonomous_variable = autonomous_selection::middle_control_middlestart;
+	autonomous_selection autonomous_variable = autonomous_selection::test;
 	switch (autonomous_variable)    
     {
         case (autonomous_selection::test):
@@ -97,6 +97,14 @@ void autonomous()
 
 void opcontrol()
 {
+	// Set to defaults
+	
+	park.set_value(park_value);
+	scraper.set_value(scraper_value);
+	descore.set_value(descore_value);
+	outtake_pneumatics.set_value(outtake_value); // false = up
+	blocker.set_value(blocker_value); // false = up	
+
 	while (true) 
 	{
     	// Get joystick positions
@@ -109,59 +117,70 @@ void opcontrol()
 		left_mg.move(straight + turn);
 		right_mg.move(straight - turn);
 
-		// Hold
-
-		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
-		{
-			execute_command(command::collecting);
-			pros::delay(10); // hold
-		}
-
-		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2))
-		{
-			execute_command(command::high);
-			pros::delay(10); // hold
-		}
-
-		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2))
-		{
-			execute_command(command::middle);
-			pros::delay(10); // hold
-		}
-
-		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
-		{
-			intake_mg.move(170);
-		}
-
-		else 
-		{
-			execute_command(command::stop);
-		}
-
-		// Toggle
+		// Controls
 
 		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN))
 		{
 			park_value = !park_value;
 			park.set_value(park_value);
-			pros::delay(170); // toggle
-			scraper_value != scraper_value;
-			scraper.set_value(scraper_value);
+			pros::delay(170); // Toggle
 		}
 
 		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_Y))
 		{
-			scraper_value != scraper_value;
+			scraper_value = !scraper_value;
 			scraper.set_value(scraper_value);
-			pros::delay(170); // toggle
+			pros::delay(170); // Toggle
+		}
+
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_L1))
+		{
+			blocker_value = false;
+			blocker.set_value(blocker_value);
+			outtake_value = false;
+			outtake_pneumatics.set_value(outtake_value);
+			intake_mg.move(127);
+			pros::delay(10); // Hold, need to check
 		}
 
 		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
 		{
 			descore_value = !descore_value;
 			descore.set_value(descore_value);
-			pros::delay(170); // toggle
+			pros::delay(170); // Toggle
+		}
+
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2))
+		{
+			outtake_value = true;
+			outtake_pneumatics.set_value(outtake_value);
+			blocker_value = false; // switched, open
+			blocker.set_value(blocker_value);
+			intake_mg.move(127);
+			pros::delay(10); // Hold, need to check				
+		}
+
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
+		{
+			outtake_value = false;
+			outtake_pneumatics.set_value(outtake_value);
+			blocker_value = true;
+			blocker.set_value(blocker_value);
+			intake_mg.move(127);
+			pros::delay(10); // Hold, need to check	
+		}
+
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_A))
+		{
+			scraper_value = false;
+			scraper.set_value(scraper_value);
+			intake_mg.move(-127);
+			pros::delay(10); // Hold
+		}
+
+		else
+		{
+			intake_mg.move(0);
 		}
 
 		pros::delay(20);

@@ -95,8 +95,6 @@ void arc_odometry_fn ()
 
         // Delay
         odom_alive += 20;
-        // pros::lcd::print(5, "odometry alive for: %f msec", odom_alive);
-        // I can't be randomly trying to print to the lcd outside of the lcd printing task
         pros::delay(20);
     }
 }
@@ -275,14 +273,17 @@ void straight_PID (double desired_x, double desired_y, bool is_going_backwards, 
     right_mg.move(0);
 }
 
+// outtake_pneumatics.set_value(outtake_value); 
+    // false = up
+// blocker.set_value(blocker_value); 
+    // false = up	
+
 void execute_autonomous(autonomous_selection slct) 
 {
     switch (slct)    
     {
         case (autonomous_selection::test):
-            intake_mg.move(127);
-            outtake_value = false;
-            outtake_pneumatics.set_value (outtake_value);
+            
             break;
 
         case (autonomous_selection::middle_control_middlestart):
@@ -310,10 +311,10 @@ void execute_autonomous(autonomous_selection slct)
             straight_PID(-0.4*TILE, -0.4*TILE, true);
             execute_command(command::high);
             pros::delay(1000);
+            execute_command(command::collecting);
             blocker_value = false;
             blocker.set_value(blocker_value);
-            execute_command(command::collecting);
-
+            
             // (3) Scraper
             straight_PID(-2*TILE, -2*TILE); // possibly need to tune X
             scraper_value = true;
@@ -329,7 +330,15 @@ void execute_autonomous(autonomous_selection slct)
             blocker.set_value(blocker_value);
             straight_PID(-2*TILE, -TILE - 5, false, 0.5); // tune
             execute_command(command::high);
-            
+
+            // (5) Descore
+            straight_PID(-2*TILE, -2*TILE);
+            // x = -TILE - DESCORE_LENGTH
+            turning_PID(-45); // y = -x - 2
+            straight_PID(-TILE - DESCORE_LENGTH, -TILE + DESCORE_LENGTH);
+            turning_PID(0);
+            straight_PID(-TILE - DESCORE_LENGTH, -0.5*TILE);
+
             break;
             
         case (autonomous_selection::left_high_goal_middlestart):
@@ -341,42 +350,50 @@ void execute_autonomous(autonomous_selection slct)
             turning_PID(-90);
 
             // (1) Collect balls
-            straight_PID(-TILE - 1, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
-            execute_command(command::low);
-            pros::delay(500);
-            execute_command(command::collecting);
-            execute_command(command::stop);
-            straight_PID(-TILE - TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
+            // straight_PID(-TILE - 1, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
+            // execute_command(command::low);
+            // pros::delay(500);
+            // execute_command(command::collecting);
+            // execute_command(command::stop);
+            // straight_PID(-TILE - TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK);
 
             // (2) Collect balls under long goal
-            turning_PID(-45);
-            execute_command(command::collecting);
-            scraper_value = true;
-            scraper.set_value (scraper_value);
-            straight_PID(-2*TILE - 3, 3);
-            pros::delay(1000);
+            // turning_PID(-45);
+            // execute_command(command::collecting);
+            // scraper_value = true;
+            // scraper.set_value (scraper_value);
+            // straight_PID(-2*TILE - 3, 3);
+            // pros::delay(1000);
 
             // (3) Go to loader
-            scraper_value = false;
-            scraper.set_value (scraper_value);
-            straight_PID(-TILE - TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, true);
-            turning_PID(-135);
-            straight_PID(-2*TILE, -2*TILE);
-            turning_PID(180);
-            straight_PID(-2*TILE, -3*TILE + 5); // tune
-            scraper_value = true;
-            scraper.set_value (scraper_value);
-            execute_command(command::collecting);
-            pros::delay(1000);
+            // scraper_value = false;
+            // scraper.set_value (scraper_value);
+            // straight_PID(-TILE - TRACKING_CENTER_DISTANCE_FROM_BACK, -TILE + TRACKING_CENTER_DISTANCE_FROM_BACK, true);
+            // turning_PID(-135);
+            // straight_PID(-2*TILE, -2*TILE);
+            // turning_PID(180);
+            // straight_PID(-2*TILE, -3*TILE + 5); // tune
+            // scraper_value = true;
+            // scraper.set_value (scraper_value);
+            // execute_command(command::collecting);
+            // pros::delay(1000);
 
             // (4) Go to high goal
-            straight_PID(-2*TILE, -TILE - 5); // tune
-            outtake_value = true;
-            outtake_pneumatics.set_value(outtake_value);
-            blocker_value = true;
-            blocker.set_value(blocker_value);
-            straight_PID(-2*TILE, -TILE - 3); // tune
-            execute_command(command::high);            
+            // straight_PID(-2*TILE, -TILE - 5); // tune
+            // outtake_value = true;
+            // outtake_pneumatics.set_value(outtake_value);
+            // blocker_value = true;
+            // blocker.set_value(blocker_value);
+            // straight_PID(-2*TILE, -TILE - 3); // tune
+            // execute_command(command::high);   
+            
+            // (5) Descore
+            // straight_PID(-2*TILE, -2*TILE);
+            // x = -TILE - DESCORE_LENGTH
+            // turning_PID(-45); // y = -x - 2
+            // straight_PID(-TILE - DESCORE_LENGTH, -TILE + DESCORE_LENGTH);
+            // turning_PID(0);
+            // straight_PID(-TILE - DESCORE_LENGTH, -0.5*TILE);
 
             break;
         
@@ -461,7 +478,7 @@ void execute_autonomous(autonomous_selection slct)
 
             // (4) Putting other balls in high goal
             turning_PID(-135);
-            straight_PID(-0.4*TILE + 5, -0.4*TILE + 5, true);
+            straight_PID(-0.4*TILE, -0.4*TILE, true);
             outtake_value = true;
             outtake_pneumatics.set_value(outtake_value);
             blocker_value = true; // unblock

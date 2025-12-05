@@ -19,6 +19,8 @@
 #define PARK_ZONE_WIDTH 18.87
 #define PARK_ZONE_DEPTH 16.86
 
+#define DESCORE_LENGTH 6 // 12 holes ==> 6 inches
+
 #define TRACKING_CENTER_DISTANCE_FROM_BACK 7.75
     // 31 holes from front to back, 27 holes from left to right
     // 31/2 = 15.5 inches from front to back, 27/2 = 13.5 inches from left to right (1 hole = 0.5 inches)

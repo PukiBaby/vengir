@@ -8,6 +8,11 @@
 
 // Enum defined in header
 
+// outtake_pneumatics.set_value(outtake_value); 
+    // false = up
+// blocker.set_value(blocker_value); 
+    // false = up	
+
 void execute_command(command cmd) {
   switch (cmd) 
   {
@@ -39,7 +44,7 @@ void execute_command(command cmd) {
             park_value = false;
             park.set_value (park_value);
 
-            outtake_value = false;
+            outtake_value = true; // down
             outtake_pneumatics.set_value (outtake_value);
         }
 
@@ -53,7 +58,7 @@ void execute_command(command cmd) {
             park_value = false;
             park.set_value (park_value);
 
-            outtake_value = true;
+            outtake_value = false; // up
             outtake_pneumatics.set_value (outtake_value);
         }
 
